@@ -1,16 +1,23 @@
+import crypto from 'crypto';
+import pool from '../config/db.js';
 
-const apis = [];
+export const createApi = async (apiData) => {
+    const { name, baseUrl, environment } = apiData;
+    const apiKey = crypto.randomBytes(32).toString('hex');
 
-export const registerApiService = (apiData) => {
-    const newApi = {
-        id: `api_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`,
-        ...apiData,
-        createdAt: new Date().toISOString()
-    };
-    apis.push(newApi);
-    return newApi;
+    const query = `
+        INSERT INTO apis (name, base_url, environment, api_key)
+        VALUES ($1, $2, $3, $4)
+        RETURNING *;
+    `;
+    const values = [name, baseUrl, environment, apiKey];
+
+    const result = await pool.query(query, values);
+    return result.rows[0];
 };
 
-export const listApisService = () => {
-    return apis;
+export const getAllApis = async () => {
+    const query = 'SELECT * FROM apis ORDER BY created_at DESC;';
+    const result = await pool.query(query);
+    return result.rows;
 };
