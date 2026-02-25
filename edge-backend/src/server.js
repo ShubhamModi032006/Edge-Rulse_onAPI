@@ -1,7 +1,14 @@
+import { connectDB } from "./config/db.js";
+import app from "./app.js";
 
-import app from './app.js';
-import { config } from './config/env.js';
+const PORT = process.env.PORT || 5000;
 
-app.listen(config.port, () => {
-    console.log(`EdgeRules backend running on port ${config.port}`);
-});
+const startServer = async () => {
+    await connectDB();
+
+    app.listen(PORT, () => {
+        console.log(`EdgeRules backend running on port ${PORT}`);
+    });
+};
+
+startServer();
