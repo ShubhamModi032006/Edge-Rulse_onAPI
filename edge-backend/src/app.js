@@ -6,7 +6,7 @@ import morgan from 'morgan';
 import healthRoutes from './routes/health.routes.js';
 import apiRoutes from './routes/api.routes.js';
 import ruleRoutes from './routes/rule.routes.js';
-import { errorHandler } from './middleware/errorHandler.js';
+import { errorHandler } from './middleware/error.middleware.js';
 import { notFoundHandler } from './middleware/notFoundHandler.js';
 import { config } from './config/env.js'; // Imports env variables
 
