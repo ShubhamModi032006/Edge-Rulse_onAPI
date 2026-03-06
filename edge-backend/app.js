@@ -6,6 +6,7 @@ import morgan from 'morgan';
 import healthRoutes from './routes/health.routes.js';
 import apiRoutes from './routes/api.routes.js';
 import ruleRoutes from './routes/rule.routes.js';
+import { rateLimitMiddleware } from './middleware/rateLimit.middleware.js';
 import { errorHandler } from './middleware/error.middleware.js';
 import { notFoundHandler } from './middleware/notFoundHandler.js';
 import { config } from './config/env.js'; // Imports env variables
@@ -19,6 +20,9 @@ if (config.env !== 'production') {
     app.use(morgan('dev'));
 }
 app.use(express.json());
+
+// Global Rate Limiting Engine Middleware
+app.use(rateLimitMiddleware);
 
 // Routes
 app.use('/', healthRoutes);

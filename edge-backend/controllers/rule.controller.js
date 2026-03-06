@@ -1,4 +1,6 @@
 import { successResponse, errorResponse } from '../utils/response.js';
+import { getCachedRules } from '../services/ruleCache.service.js';
+import redis from '../config/redis.js';
 import {
     createRule,
     getRules,
@@ -100,6 +102,24 @@ export const listRuleVersions = async (req, res, next) => {
         const { id } = req.params;
         const versions = await getRuleVersions(id);
         return successResponse(res, versions, 'Rule versions retrieved successfully');
+    } catch (error) {
+        next(error);
+    }
+};
+
+export const getRuleCacheDebug = async (req, res, next) => {
+    try {
+        const { apiId } = req.params;
+
+        const key = `edgerules:api:${apiId}:rules`;
+        const exists = await redis.exists(key);
+
+        const rules = await getCachedRules(apiId);
+
+        return res.json({
+            source: exists ? 'redis' : 'db',
+            rules
+        });
     } catch (error) {
         next(error);
     }

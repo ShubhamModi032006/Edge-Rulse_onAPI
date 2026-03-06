@@ -5,7 +5,8 @@ import {
     getSingleRule,
     updateExistingRule,
     deleteRule,
-    listRuleVersions
+    listRuleVersions,
+    getRuleCacheDebug
 } from '../controllers/rule.controller.js';
 
 const router = express.Router();
@@ -16,5 +17,6 @@ router.get('/:id', getSingleRule);
 router.put('/:id', updateExistingRule);
 router.delete('/:id', deleteRule);
 router.get('/:id/versions', listRuleVersions);
+router.get('/:apiId/cache', getRuleCacheDebug);
 
 export default router;

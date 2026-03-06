@@ -1,4 +1,5 @@
 import pool from '../config/db.js';
+import { invalidateRuleCache } from './ruleCache.service.js';
 
 export const createRule = async (ruleData) => {
     const { apiId, name, type, scope, priority, startTime, endTime } = ruleData;
@@ -36,6 +37,10 @@ export const createRule = async (ruleData) => {
         await client.query(insertVersionQuery, versionValues);
 
         await client.query('COMMIT');
+
+        // Invalidate cache
+        await invalidateRuleCache(apiId);
+
         return newRule;
     } catch (error) {
         await client.query('ROLLBACK');
@@ -90,6 +95,8 @@ export const updateRule = async (id, updateData) => {
             throw new Error('Rule not found');
         }
 
+        const ruleApiId = checkResult.rows[0].api_id;
+
         // Map camelCase to snake_case for DB columns
         const columnMap = {
             apiId: 'api_id',
@@ -143,6 +150,10 @@ export const updateRule = async (id, updateData) => {
         await client.query(insertVersionQuery, [id, nextVersion, configSnapshot]);
 
         await client.query('COMMIT');
+
+        // Invalidate cache after update
+        await invalidateRuleCache(ruleApiId);
+
         return updatedRule;
     } catch (error) {
         await client.query('ROLLBACK');
@@ -164,7 +175,11 @@ export const disableRule = async (id) => {
     if (result.rowCount === 0) {
         throw new Error('Rule not found');
     }
-    return result.rows[0];
+
+    const disabledRule = result.rows[0];
+    await invalidateRuleCache(disabledRule.api_id);
+
+    return disabledRule;
 };
 
 export const getRuleVersions = async (id) => {
