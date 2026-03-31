@@ -21,3 +21,9 @@ export const getAllApis = async () => {
     const result = await pool.query(query);
     return result.rows;
 };
+
+export const getApiById = async (apiId) => {
+    const query = 'SELECT * FROM apis WHERE id = $1 AND is_active = true;';
+    const result = await pool.query(query, [apiId]);
+    return result.rows[0] || null;
+};
