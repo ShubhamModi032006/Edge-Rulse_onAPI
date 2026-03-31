@@ -10,6 +10,7 @@ import { ruleEngineMiddleware } from './middleware/ruleEngine.middleware.js';
 import { errorHandler } from './middleware/error.middleware.js';
 import { notFoundHandler } from './middleware/notFoundHandler.js';
 import { config } from './config/env.js'; // Imports env variables
+import { proxyMiddleware } from './middleware/proxy.middleware.js';
 
 const app = express();
 
@@ -21,13 +22,16 @@ if (config.env !== 'production') {
 }
 app.use(express.json());
 
-// Global Rule Engine Middleware
-app.use(ruleEngineMiddleware);
-
-// Routes
+// Management Routes (must be defined BEFORE gateway intercepts)
 app.use('/', healthRoutes);
 app.use('/api', apiRoutes);
 app.use('/rules', ruleRoutes);
+
+// Global Rule Engine Middleware
+app.use(ruleEngineMiddleware);
+
+// Gateway Proxy Middleware (intercepts and forwards remaining requests)
+app.use(proxyMiddleware);
 
 // Error Handling
 app.use(notFoundHandler);
