@@ -46,3 +46,11 @@ This is the backend skeleton for EdgeRules, a centralized API rule engine.
 - Express.js
 - Clean Architecture (Controllers, Services, Routes)
 - In-memory storage (Stage 1)
+
+
+
+need to understand this 
+# Rule evaluation flow
+# Redis behavior
+# Proxy lifecycle
+# Failure cases

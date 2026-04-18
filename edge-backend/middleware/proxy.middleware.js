@@ -1,28 +1,31 @@
-import { getApiById } from '../services/api.service.js';
+import { getApiById, getApiByRoutePrefix } from '../services/api.service.js';
 import { forwardRequest } from '../services/proxy.service.js';
 
 export const proxyMiddleware = async (req, res, next) => {
     try {
-        // 1. Extract apiId from header
-        const apiId = req.headers['x-api-id'];
+        const originalUrl = req.originalUrl;
 
-        if (!apiId) {
-            return res.status(400).json({ success: false, message: "Missing x-api-id header" });
+        // 1. Find matching API by longest prefix
+        let api = await getApiByRoutePrefix(originalUrl);
+
+        // 2. Fallback to header based extraction just in case
+        if (!api) {
+            const apiId = req.headers['x-api-id'];
+            if (apiId) {
+                api = await getApiById(apiId);
+            }
         }
 
-        // 2. Fetch API from DB
-        const api = await getApiById(apiId);
-        
         // 3. If API not found: return 404
         if (!api) {
             return res.status(404).json({ success: false, message: "API not found" });
         }
 
-        // 4. Build target URL (http-proxy-middleware uses base_url as the target host inherently and appends req.originalUrl automatically in the proxy request under the hood)
+        // 4. Define target parameters
         const targetUrl = api.base_url;
 
-        // 5. Forward request using proxy service
-        return forwardRequest(req, res, targetUrl);
+        // 5. Forward request using proxy service (incorporating rewrite bounds)
+        return forwardRequest(req, res, targetUrl, api.route_prefix);
     } catch (error) {
         console.error('Proxy Middleware Error:', error);
         next(error);
