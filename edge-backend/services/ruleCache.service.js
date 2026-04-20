@@ -37,6 +37,10 @@ export const loadRulesIntoCache = async (apiId) => {
     }
 };
 
+// FIX: Issue 4 - Fix Redis Failure -> DB Meltdown
+const memoryFallback = new Map();
+const MEMORY_TTL_MS = 60000; // 1 min in-memory fallback limit
+
 export const getCachedRules = async (apiId) => {
     try {
         const key = getCacheKey(apiId);
@@ -47,10 +51,31 @@ export const getCachedRules = async (apiId) => {
         }
     } catch (error) {
         console.error('Redis error while getting cache:', error);
+        
+        // Use in-memory cache to prevent DB overload when Redis fails
+        const memEntry = memoryFallback.get(apiId);
+        if (memEntry && memEntry.expiry > Date.now()) {
+            return memEntry.data;
+        } else if (memEntry) {
+            memoryFallback.delete(apiId);
+        }
+        
+        console.warn('Redis unavailable and memory cache missed. Failing open.');
+        return []; // Fail-open (skip rules temporarily)
     }
 
-    // If not found or Redis fails, load from DB
-    return await loadRulesIntoCache(apiId);
+    try {
+        // Cache miss (not failure) - load from DB
+        const rules = await loadRulesIntoCache(apiId);
+        
+        // Save to memory cache for protection in case Redis fails later
+        memoryFallback.set(apiId, { data: rules, expiry: Date.now() + MEMORY_TTL_MS });
+        
+        return rules;
+    } catch (dbError) {
+        console.error('Database error during cache miss:', dbError);
+        return []; // Fail-open on DB failure
+    }
 };
 
 export const invalidateRuleCache = async (apiId) => {

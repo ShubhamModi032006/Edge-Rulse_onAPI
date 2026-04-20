@@ -1,16 +1,26 @@
 import { evaluateRules } from '../services/ruleEngine.service.js';
+import { getApiByRoutePrefix } from '../services/api.service.js';
 
 export const ruleEngineMiddleware = async (req, res, next) => {
     try {
-        const apiId = req.headers['x-api-id'];
+        // FIX: Issue 3 - Strip client injected header to prevent routing bypass
+        if (req.headers['x-api-id']) {
+            delete req.headers['x-api-id'];
+        }
 
-        // Skip rules if no x-api-id is provided
-        if (!apiId) {
+        // Discover API by route prefix instead of trusting client header
+        const originalUrl = req.originalUrl || req.path;
+        const api = await getApiByRoutePrefix(originalUrl);
+
+        // Skip rules if no matching API is found
+        if (!api) {
             return next();
         }
 
+        const apiId = api.id;
         const route = req.path;
-        const ip = req.ip || req.connection.remoteAddress;
+        // Read IP with priority from x-forwarded-for
+        const ip = req.headers['x-forwarded-for']?.split(',')[0].trim() || req.ip || req.connection.remoteAddress;
         const headers = req.headers;
 
         const result = await evaluateRules({ apiId, route, ip, headers });

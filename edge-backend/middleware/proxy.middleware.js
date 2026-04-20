@@ -8,13 +8,8 @@ export const proxyMiddleware = async (req, res, next) => {
         // 1. Find matching API by longest prefix
         let api = await getApiByRoutePrefix(originalUrl);
 
-        // 2. Fallback to header based extraction just in case
-        if (!api) {
-            const apiId = req.headers['x-api-id'];
-            if (apiId) {
-                api = await getApiById(apiId);
-            }
-        }
+        // FIX: Issue 3 - Secure/Remove x-api-id Header Injection block
+        // (Removed insecure fallback block that trusted req.headers['x-api-id'])
 
         // 3. If API not found: return 404
         if (!api) {

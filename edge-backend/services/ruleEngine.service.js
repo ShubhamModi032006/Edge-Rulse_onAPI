@@ -13,8 +13,9 @@ export const evaluateRules = async ({ apiId, route, ip, headers }) => {
         const validRules = rules.filter(rule => {
             if (!rule.is_enabled) return false;
 
-            // Scope match logic
-            if (rule.scope !== route && rule.scope !== '*' && !route.startsWith(rule.scope)) return false;
+            // FIX: Issue 5 - Route Prefix Matching Bug
+            // Scope match logic (Exact match or true prefix path respecting boundaries)
+            if (rule.scope !== route && rule.scope !== '*' && !(route === rule.scope || route.startsWith(rule.scope + '/'))) return false;
 
             // Time validity
             if (rule.start_time && new Date(rule.start_time) > now) return false;
@@ -69,7 +70,7 @@ export const evaluateRules = async ({ apiId, route, ip, headers }) => {
                 if (!rateLimitApplied) {
                     rateLimitApplied = true;
                     // Apply rate limit using existing service functionality
-                    const rlResult = await applyRateLimit({ apiId, route, ip });
+                    const rlResult = await applyRateLimit({ apiId, route, ip, rule, headers });
                     if (!rlResult.allowed) {
                         return {
                             action: 'block',
